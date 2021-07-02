@@ -4,70 +4,85 @@
 
 ## example
 
+### simple-use
+
+* `build script and call function`
+
 ```python
-import pyquickjs as quickjs
+from pyquickjs import QuickJS
+
+script = "function add(a, b) { return a + b };"
+
+qs = QuickJS()
+    
+assert qs.compile(script)
+ret = qs.call('add', 1, 2, buffer_length=10)
+print(ret)
+```
+
+* `run script with return value`
+
+```python
+
+from pyquickjs import run_script
+
+
+script = "function add(a, b) { return}; add(1, 2)"
+
+ret = ruun_script(script)
+print(ret)
+```
+
+### multi-threaded-call
+```python
+from pyquickjs import QuickJS
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 
 def test():
     script = "function add(a, b) { return a + b };"
 
-    # 当使用多线程时, 需要创建新的 quickjs 运行时和上下文
-    rt = quickjs.init_runtime()
-    ctx = quickjs.new_context(rt)
-    
-    # 编译使用你新建的上下文
-    if quickjs.compile(ctx, script):
-        # 调用函数使用你新建的上下文
-        ret = quickjs.call(ctx, "add", [1, 2])
-
-        # 使用 free=True 时执行完自动释放创建的上下文
-        # ret = call("add", [3, 43], free=True)
-        # buffer_length 控制缓冲区大小 节省内存
-        ret += quickjs.call(ctx, "add", [3, 43], buffer_length=10)
-    else:
-        print("script build error")
-    
-    # 使用完需要释放, 注意释放顺序, 先释放上下文再释放运行时
-    quickjs.free_context(ctx)
-    quickjs.free_runtime(rt)
+    qs = QuickJS()
+    assert qs.compile(script)
+    ret = qs.call('add', 3, 6)
+    ret += qs.call('add', 45, 32)
     return ret
 
 
-# 多线程运行时, 每个线程都必须绑定自己的 quickjs 运行时和上下文
 with ThreadPoolExecutor(max_workers=4) as executor:
     tasks = [executor.submit(test, ) for _ in range(2)]
     for future in as_completed(tasks):
         print(future.result())
+```
 
+### multi-script-build
 
-# 创建新的 quickjs 运行时和上下文, 单线程运行时可复用
-rt = quickjs.init_runtime()
-ctx = quickjs.new_context(rt)
+```python
+from pyquickjs import QuickJS
 
 script = "function add(a, b) { return a + b };"
-if quickjs.compile(ctx, script):
-    ret = quickjs.call(ctx, "add", [1, 2])
-    ret += quickjs.call(ctx, "add", [3, 43], buffer_length=10)
-    print(ret)
-else:
-    print("script build error")
+script1 = "function plus(a, b) { return a * b}"
 
-script1 = "function plus(a, b) { return a * b };"
+qs = QuickJS()
+    
+assert qs.compile(script)
+ret = qs.call('add', 1, 2, buffer_length=10)
+print(ret)
 
-if quickjs.compile(ctx, script1):
-    ret = quickjs.call(ctx, "plus", [1, 2])
-    ret += quickjs.call(ctx, "plus", [3, 43], buffer_length=10)
-    print(ret)
-else:
-    print("script build error")
+qs.compile(script1)
+ret = qs.call('plus', 5, 8)
+print(ret)
+```
 
-# 使用完需要释放, 注意释放顺序, 先释放上下文再释放运行时
-quickjs.free_context(ctx)
-quickjs.free_runtime(rt)
+### dynamic-library-handle
 
-# 退出整个模块时需要调用该函数释放 dll 句柄
-quickjs.free()
+* `the lib provide an interface for users to actively release, however, the user can completely hand over the handle to the system management, because the python gc will recycle it`
+
+```python
+from pyquickjs import free
+
+# free the dll handle
+free()
 ```
 
 ## Show your support

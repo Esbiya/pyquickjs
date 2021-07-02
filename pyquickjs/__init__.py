@@ -1,3 +1,4 @@
+# import atexit
 import os, sys, json, _ctypes
 from ctypes import CDLL, c_char_p, c_void_p, create_string_buffer
 name = "pyquickjs"
@@ -36,9 +37,6 @@ dll.call.restype = int
 
 dll.run_script.argtypes = [c_char_p, c_char_p]
 dll.run_script.restype = int
-
-# default_rt = dll.init_runtime()
-# default_ctx = dll.new_context(default_rt)
 
 
 def init_runtime() -> c_void_p:
@@ -122,13 +120,12 @@ def call(ctx: c_void_p, func_name: str, args: str or list = [], buffer_length: i
     return ret
 
 
+# @atexit.register
 def free():
     """
     释放dll 句柄
     :return
     """
-    # dll.free_context(default_ctx)
-    # dll.free_runtime(default_rt)
     if _os == "win32":
         _ctypes.FreeLibrary(dll._handle)
     else:
@@ -148,3 +145,54 @@ def run_script(script: str, length: int = 1024):
     ret = out[:_length].decode()
     out = None
     return ret
+
+
+class QuickJS:
+    
+    def __init__(self):
+        self.rt = dll.init_runtime()
+        self.ctx = dll.new_context(self.rt)
+    
+    def compile(self, script: str) -> bool:
+        """
+        预编译 js 脚本
+        @params script: 预编译脚本
+        :return 编译是否通过: bool
+        """
+        if not dll.compile(self.ctx, script.encode()):
+            return False
+        return True
+    
+    def call(self, func_name: str, *args, buffer_length: int = 1024) -> str:
+        """
+        调用函数
+        @params ctx: js 上下文
+        @params func_name: 函数名
+        @params args: 参数列表
+        @params buffer_length: 缓冲区大小, 默认 1024 字节
+        :return 函数返回值: str
+        """
+        out = create_string_buffer(buffer_length)
+
+        def process_args(_args):
+            if isinstance(_args, str):
+                _args = [_args]
+            __args = []
+            for _arg in _args:
+                if isinstance(_arg, str):
+                    __args.append("'{}'".format(_arg))
+                elif isinstance(_arg, int):
+                    __args.append(str(_arg))
+                elif isinstance(_arg, dict) or isinstance(_arg, list):
+                    __args.append(json.dumps(_arg))
+            return __args
+
+        _args = f'({",".join(process_args(args))})'
+        _length = dll.call(self.ctx, func_name.encode(), out, _args.encode())
+        ret = out[:_length].decode()
+        out = None
+        return ret
+
+    def __del__(self):
+        dll.free_context(self.ctx)
+        dll.free_runtime(self.rt)
