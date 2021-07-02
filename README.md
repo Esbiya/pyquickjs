@@ -33,6 +33,24 @@ ret = run_script(script)
 print(ret)
 ```
 
+### complicated-use
+
+```python
+import pyquickjs as quickjs
+
+js = "function add(a, b) { return}"
+
+rt = quickjs.init_runtime()
+ctx = quickjs.new_context(rt)
+
+assert quickjs.compile(ctx, js):
+ret = quickjs.call(ctx, "add", 1, 2)
+print(ret)
+
+quickjs.free_context(ctx)
+quickjs.free_runtime(rt)
+```
+
 ### multi-threaded-call
 ```python
 from pyquickjs import QuickJS
