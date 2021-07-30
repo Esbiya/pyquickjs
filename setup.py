@@ -6,7 +6,7 @@ with open("README.rst", "r") as f:
 
 setup(
     name='pyquickjs',  # 包名
-    version='1.1.9',  # 版本号
+    version='1.2.3',  # 版本号
     description='a quickjs call package, used for eval javascript',
     long_description=long_description,
     author='esbiya',
