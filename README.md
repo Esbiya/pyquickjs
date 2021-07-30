@@ -11,13 +11,16 @@
 ```python
 from pyquickjs import QuickJS
 
-script = "function add(a, b) { return a + b };"
+script = "var c = {d: 1}; function add(a, b) { return a + b };"
 
 qs = QuickJS()
     
 assert qs.compile(script)
 ret = qs.call('add', 1, 2)
 print(ret)
+
+ret1 = qs.eval("c.d")
+print(ret1)
 ```
 
 * `run script with return value`
